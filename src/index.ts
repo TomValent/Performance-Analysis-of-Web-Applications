@@ -1,31 +1,40 @@
-import { chromium } from 'playwright';
-import {DEFAULT_ROUTE, DEFAULT_URL_TO_PROFILE} from "../config";
+import { firefox } from 'playwright';
+import { DEFAULT_ROUTE, DEFAULT_URL_TO_PROFILE } from "../config";
 
 type Arguments = { [key: string]: any };
 
 async function profileWebPage(url: string, route: string) {
-    const browser = await chromium.launch();
+    const browser = await firefox.launch();
     const context = await browser.newContext();
     const page = await context.newPage();
 
+    await context.tracing.start({ screenshots: true, snapshots: true });
     await page.route(route, (r) => r.continue());
     await page.evaluate(() => {
         window.performance;
     });
 
-    // Navigate to the web page
     await page.goto(url);
 
-    // Inject code for profiling
     const profilingResults: any = await page.evaluate(() => {
         return window.performance;
     });
 
     console.log("Time info: ", profilingResults);
+
+    const traceBuffer: any = context.tracing;
+
+    await context.tracing.stop();
+
+    if (traceBuffer) {
+        console.log("Tracing data:", traceBuffer);
+    }
+
     await new Promise(resolve => setTimeout(resolve, 10000));
+    await browser.close();
 }
 
-function argumentValueError(): never {
+function argumentValueError(): void {
     console.error("Error: Argument value not found");
     process.exit();
 }
@@ -60,8 +69,8 @@ function processArguments(): Arguments {
 }
 
 let args: Arguments      = processArguments();
-let urlToProfile: string = args.url ? args.url as string : DEFAULT_URL_TO_PROFILE;
 let route: string        = args.route ? args.route as string : DEFAULT_ROUTE;
+let urlToProfile: string = args.url ? args.url as string : DEFAULT_URL_TO_PROFILE;
 
 profileWebPage(urlToProfile, route)
     .catch(e => {

@@ -31,7 +31,7 @@ async function profileWebPage(url: string, route: string) {
     }
 
     await new Promise(resolve => setTimeout(resolve, 10000));
-    await browser.close();
+    //await browser.close();
 }
 
 function argumentValueError(): void {

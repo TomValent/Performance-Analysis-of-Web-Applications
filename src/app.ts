@@ -1,20 +1,21 @@
-const express = require('express');
-const trace = require('./tracing');
-const { countAllRequests } = require('./metrics');
-const test = require('../../../testProjects/dice/dist');
+import express, { Express, NextFunction } from 'express';
+import { Span, Tracer } from "@opentelemetry/api";
+import { trace } from './tracing';
+import { countAllRequests } from './metrics';
+const test = require('../../testProjects/dice/dist/index.js');
 
-const app = express();
+const app: Express = express();
 app.use(countAllRequests());
 
-app.use((req, res, next) => {
+app.use((req: express.Request, res: express.Response, next: NextFunction) => {
 
-  const tracer = trace().getTracer('example-tracer');
-  const span = tracer.startSpan('incoming-request');
+  const tracer: Tracer = trace().getTracer('tracer');
+  const span: Span = tracer.startSpan('request');
 
   span.setAttribute('http.method', req.method);
   span.setAttribute('http.url', req.url);
 
-  const childSpan = tracer.startSpan('processing', { parent: span });
+  const childSpan: Span = tracer.startSpan('processing', { parent: span } as any);
 
   childSpan.end();
   span.end();
@@ -23,12 +24,12 @@ app.use((req, res, next) => {
 });
 
 try {
-  let count = 0;
-  setInterval(() => {
+  let count: number = 0;
+  setInterval((): void => {
       count++;
   }, 1000);
 
-  app.get('/', (req, res) => {
+  app.get('/', (req: express.Request, res: express.Response) => {
     res.send(`
       <h2>Welcome to the homepage!</h2>
       <button onclick="window.location.href='/about'">About</button>
@@ -37,11 +38,11 @@ try {
     `);
   });
 
-  app.get('/about', (req, res) => {
+  app.get('/about', (req: express.Request, res: express.Response) => {
     res.send('This is the just testing page for thesis.');
   });
 
-  app.get('/roll', (req, res) => {
+  app.get('/roll', (req: express.Request, res: express.Response) => {
     const htmlContent = `
       <p>Roll the D20:</p>
       <button onclick="rollDice()">Roll D20</button>
@@ -61,14 +62,14 @@ try {
     res.send(htmlContent);
   });
 
-  app.get('/uptime', (req, res) => {
+  app.get('/uptime', (req: express.Request, res: express.Response) => {
     res.send(`Uptime: ${count} seconds have passed`);
   });
 } catch (error) {
   console.error('Error loading project: ', error);
 }
 
-const PORT = process.env.PORT || 9000;
+const PORT: string|9000 = process.env.PORT || 9000;
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

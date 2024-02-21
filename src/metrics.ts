@@ -1,14 +1,11 @@
-'use strict'
-
-const { MeterProvider, ConsoleMetricExporter } = require("@opentelemetry/metrics");
-const FileMetricsExporter = require('./fileMetricsExporter');
+import express, { NextFunction } from "express";
+import { MeterProvider } from "@opentelemetry/metrics";
+import { FileMetricsExporter } from './exporters/FileMetricsExporter';
 
 const meter = new MeterProvider({
     exporter: new FileMetricsExporter('data/metrics/metrics.log'),
     interval: 1000,
 }).getMeter("meter-name");
-
-
 
 const requestCount = meter.createCounter('requests', {
     description: 'Request count:'
@@ -16,8 +13,8 @@ const requestCount = meter.createCounter('requests', {
 
 const boundInstruments = new Map();
 
-module.exports.countAllRequests = () => {
-    return (req, res, next) => {
+export const countAllRequests = () => {
+    return (req: express.Request, res: express.Response, next: NextFunction) => {
         if (!boundInstruments.has(req.path)) {
             const labels = { route: req.path };
             const boundCounter = requestCount.bind(labels);

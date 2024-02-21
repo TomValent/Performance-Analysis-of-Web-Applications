@@ -1,2 +1,4 @@
-/dist/
-/node_modules/
+.idea/
+data/
+dist/
+node_modules/

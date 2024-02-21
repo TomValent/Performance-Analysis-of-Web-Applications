@@ -1,8 +1,8 @@
 ## Description
-Typescript profiler written with Playwright.
+Typescript profiler written with OpenTelemetry.
 
 ## Requirements
-- Node.js 16.20 >=
+- Node.js 18.16 >=
 
 ## Usage
 
@@ -11,5 +11,3 @@ yarn install
 yarn build
 yarn start
 ```
-
-Default values for arguments are in `config.ts`.

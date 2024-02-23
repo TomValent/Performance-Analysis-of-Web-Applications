@@ -4,6 +4,7 @@ import { FileSpanExporter } from './exporters/FileSpanExporter';
 
 export const trace = () => {
     const provider = new NodeTracerProvider({
+        serviceName: 'tracing-service',
         logLevel: 30,
     } as any);
 

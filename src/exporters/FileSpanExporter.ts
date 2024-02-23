@@ -18,7 +18,7 @@ export class FileSpanExporter implements SpanExporter {
     constructor(filename: string) {
 
         this.filename = filename;
-        const logDir   = path.dirname(filename);
+        const logDir: string = path.dirname(filename);
 
         if (!fs.existsSync(logDir)) {
             fs.mkdirSync(logDir, { recursive: true });
@@ -37,15 +37,18 @@ export class FileSpanExporter implements SpanExporter {
      * @return {void}
      */
     export(spans: ReadableSpan[], done: (result: ExportResult) => void): void {
-        const formattedSpans = spans.map(span => this.formatSpan(span)).join('\n');
-        fs.appendFile(this.filename, formattedSpans + '\n', 'utf8', (err) => {
-            if (err) {
-                done(new Result(ExportResultCode.FAILED, new Error('Error writing spans to file:' + err.message)));
-            } else {
-                console.log('Spans written to file:', this.filename);
-                done(new Result(ExportResultCode.SUCCESS));
-            }
-        });
+        const formattedSpans: string = spans.map(span => this.formatSpan(span)).join('\n');
+
+        if (formattedSpans !== "") {
+            fs.appendFile(this.filename, formattedSpans + '\n', 'utf8', (err) => {
+                if (err) {
+                    done(new Result(ExportResultCode.FAILED, new Error('Error writing spans to file:' + err.message)));
+                } else {
+                    console.log('Spans written to file:', this.filename);
+                    done(new Result(ExportResultCode.SUCCESS));
+                }
+            });
+        }
     }
 
     /**

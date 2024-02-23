@@ -1,35 +1,23 @@
 import express, { Express, NextFunction } from 'express';
-import { Span, Tracer } from "@opentelemetry/api";
-import { trace } from './tracing';
+import { traceMiddleware } from './tracing';
 import { countAllRequests, countAllErrors, measureLatency } from './metrics';
 const test = require('../../testProjects/dice/dist/index.js');
 
 const app: Express = express();
+
+// middlewares
 app.use(countAllRequests());
 app.use(countAllErrors);
 app.use(measureLatency());
-
-app.use((req: express.Request, res: express.Response, next: NextFunction) => {
-
-  const tracer: Tracer = trace().getTracer('tracer');
-  const span: Span = tracer.startSpan('request');
-
-  span.setAttribute('http.method', req.method);
-  span.setAttribute('http.url', req.url);
-
-  const childSpan: Span = tracer.startSpan('processing', { parent: span } as any);
-
-  childSpan.end();
-  span.end();
-
-  next();
-});
+app.use(traceMiddleware());
 
 let count: number = 0;
+
 setInterval((): void => {
     count++;
 }, 1000);
 
+// routes
 app.get('/', (req: express.Request, res: express.Response) => {
   res.send(`
     <h2>Welcome to the homepage!</h2>
@@ -67,15 +55,11 @@ app.get('/uptime', (req: express.Request, res: express.Response) => {
   res.send(`Uptime: ${count} seconds have passed`);
 });
 
-app.get('/e', (req: express.Request, res: express.Response) => {
-  throw new Error('This is an intentional error');
-});
-
-
 app.use(function(req: express.Request, res: express.Response, next: NextFunction) {
   res.status(404).send('404 Page Not Found');
 });
 
+// server
 const PORT: string|9000 = process.env.PORT || 9000;
 
 app.listen(PORT, () => {

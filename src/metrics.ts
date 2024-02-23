@@ -1,22 +1,30 @@
-import express, { NextFunction } from "express";
-import { MeterProvider } from "@opentelemetry/metrics";
+import express, {NextFunction, response} from "express";
+import { MeterProvider, Meter } from "@opentelemetry/metrics";
+import { Counter } from "@opentelemetry/api-metrics";
 import { FileMetricsExporter } from './exporters/FileMetricsExporter';
-import { Counter, ValueType } from "@opentelemetry/api";
 
-const requestMeter = new MeterProvider({
-    exporter: new FileMetricsExporter('data/metrics/metrics.log'),
-    interval: 1000,
-}).getMeter("OpenTelemetry-metrics");
+// // constants
+const PATH: string       = "data/metrics/metrics.log";
+const INTERVAL: number   = 1000;
+const METER_NAME: string = "OpenTelemetry-metrics";
 
+const exporter: FileMetricsExporter = new FileMetricsExporter(PATH);
+
+const meterProvider: MeterProvider = new MeterProvider({
+    exporter: exporter,
+    interval: INTERVAL,
+});
+
+// metrics
+const requestMeter: Meter = meterProvider.getMeter(METER_NAME);
+const errorMeter: Meter = meterProvider.getMeter(METER_NAME);
+const latencyMeter: Meter = meterProvider.getMeter(METER_NAME);
+
+// create counters
 const requestCount = requestMeter.createCounter('page_requests', {
     description: 'Request count:',
     unit: "times",
 });
-
-const errorMeter = new MeterProvider({
-    exporter: new FileMetricsExporter('data/metrics/metrics.log'),
-    interval: 1000,
-}).getMeter("OpenTelemetry-metrics");
 
 const errorCountMetric: Counter = errorMeter.createCounter('error_count', {
     description: 'Counts total occurrences of errors',
@@ -33,15 +41,11 @@ const errorMessageMetric = errorMeter.createCounter('error_message_count', {
     unit: "times",
 });
 
-const latencyMeter = new MeterProvider({
-    exporter: new FileMetricsExporter('data/metrics/metrics.log'),
-    interval: 1000,
-}).getMeter("OpenTelemetry-metrics");
-
 const boundInstruments = new Map();
 
+// middleware implementations
 export const countAllRequests = () => {
-    return (req: express.Request, res: express.Response, next: NextFunction) => {
+    return (req: express.Request, res: express.Response, next: NextFunction): void => {
         if (!boundInstruments.has(req.path)) {
             const labels = { route: req.path };
             const boundCounter = requestCount.bind(labels);
@@ -53,10 +57,9 @@ export const countAllRequests = () => {
     };
 };
 
-export const countAllErrors = (req: express.Request, res: express.Response, next: NextFunction) => {
+export const countAllErrors = (req: express.Request, res: express.Response, next: NextFunction) : void => {
     res.once('finish', () => {
         const isError = res.statusCode >= 400;
-        console.log(res.statusMessage);
 
         if (isError) {
             errorCountMetric.add(1);
@@ -81,13 +84,15 @@ export const countAllErrors = (req: express.Request, res: express.Response, next
 
 
 export const measureLatency = () => {
-    return (req: express.Request, res: express.Response, next: NextFunction) => {
+    return (req: express.Request, res: express.Response, next: NextFunction): void => {
         const start = process.hrtime();
 
         res.on('finish', () => {
             const elapsed = process.hrtime(start);
             const latencyMs = elapsed[0] * 1000 + elapsed[1] / 1000000;
             const labels = { route: req.path };
+
+            // create a summary value recorder
             const latencySummary = latencyMeter.createValueRecorder('request_latency_summary', {
                 description: 'Latency of requests',
                 unit: 'ms',

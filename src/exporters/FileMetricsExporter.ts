@@ -17,7 +17,7 @@ export class FileMetricsExporter implements MetricExporter {
      */
     constructor(filename: string) {
         this.filename = filename;
-        const logDir= path.dirname(filename);
+        const logDir: string = path.dirname(filename);
 
         if (!fs.existsSync(logDir)) {
             fs.mkdirSync(logDir, { recursive: true });
@@ -45,16 +45,19 @@ export class FileMetricsExporter implements MetricExporter {
      * @return {void}
      */
     export(metrics: MetricRecord[], resultCallback: (result: ExportResult) => void): void {
-        const formattedMetrics = metrics.map(metric => this.formatMetric(metric)).join('\n');
-        fs.appendFile(this.filename, formattedMetrics + '\n', 'utf8', (err) => {
-            if (err) {
-                console.error('Error writing metrics to file:', err);
-                resultCallback(new Result(ExportResultCode.FAILED, new Error('Error writing metrics to file:' + err.message)));
-            } else {
-                console.log('Metrics written to file:', this.filename);
-                resultCallback(new Result(ExportResultCode.SUCCESS));
-            }
-        });
+        const formattedMetrics: string = metrics.map(metric => this.formatMetric(metric)).join('\n');
+
+        if (formattedMetrics !== "") {
+            fs.appendFile(this.filename, formattedMetrics + '\n', 'utf8', (err) => {
+                if (err) {
+                    console.error('Error writing metrics to file:', err);
+                    resultCallback(new Result(ExportResultCode.FAILED, new Error('Error writing metrics to file:' + err.message)));
+                } else {
+                    console.log('Metrics written to file:', this.filename);
+                    resultCallback(new Result(ExportResultCode.SUCCESS));
+                }
+            });
+        }
     }
 
     /**

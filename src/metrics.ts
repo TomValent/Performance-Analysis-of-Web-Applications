@@ -1,14 +1,14 @@
-import express, {NextFunction, response} from "express";
-import { MeterProvider, Meter } from "@opentelemetry/metrics";
-import { Counter } from "@opentelemetry/api-metrics";
+import express, {NextFunction, response} from 'express';
+import { MeterProvider, Meter } from '@opentelemetry/metrics';
+import { Counter } from '@opentelemetry/api-metrics';
 import { FileMetricsExporter } from './exporters/FileMetricsExporter';
 
 // // constants
-const PATH: string       = "data/metrics/metrics.log";
+const FILENAME: string   = 'data/metrics/metrics.log';
 const INTERVAL: number   = 1000;
-const METER_NAME: string = "OpenTelemetry-metrics";
+const METER_NAME: string = 'OpenTelemetry-metrics';
 
-const exporter: FileMetricsExporter = new FileMetricsExporter(PATH);
+const exporter: FileMetricsExporter = new FileMetricsExporter(FILENAME);
 
 const meterProvider: MeterProvider = new MeterProvider({
     exporter: exporter,
@@ -19,26 +19,27 @@ const meterProvider: MeterProvider = new MeterProvider({
 const requestMeter: Meter = meterProvider.getMeter(METER_NAME);
 const errorMeter: Meter = meterProvider.getMeter(METER_NAME);
 const latencyMeter: Meter = meterProvider.getMeter(METER_NAME);
+const buttonLatencyMeter: Meter = meterProvider.getMeter(METER_NAME);
 
 // create counters
 const requestCount = requestMeter.createCounter('page_requests', {
     description: 'Request count:',
-    unit: "times",
+    unit: 'times',
 });
 
 const errorCountMetric: Counter = errorMeter.createCounter('error_count', {
     description: 'Counts total occurrences of errors',
-    unit: "times",
+    unit: 'times',
 });
 
 const errorCodeMetric = errorMeter.createCounter('error_code_count', {
     description: 'Counts occurrences of different error codes',
-    unit: "times",
+    unit: 'times',
 });
 
 const errorMessageMetric = errorMeter.createCounter('error_message_count', {
     description: 'Counts occurrences of different error messages',
-    unit: "times",
+    unit: 'times',
 });
 
 const boundInstruments = new Map();
@@ -67,8 +68,8 @@ export const countAllErrors = (req: express.Request, res: express.Response, next
             const errorCode = res.statusCode.toString();
             errorCodeMetric.bind({ error_code: errorCode }).add(1);
 
-            let errorMessage: string = "Route: " + req.path + " - ";
-            errorMessage += res.statusMessage ?? "Unknown error";
+            let errorMessage: string = 'Route: ' + req.path + ' - ';
+            errorMessage += res.statusMessage ?? 'Unknown error';
 
             const labels = {
                 route: req.path,
@@ -94,7 +95,7 @@ export const measureLatency = () => {
 
             // create a summary value recorder
             const latencySummary = latencyMeter.createValueRecorder('request_latency_summary', {
-                description: 'Latency of requests',
+                description: 'Latency of requests in milliseconds',
                 unit: 'ms',
             });
 

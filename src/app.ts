@@ -1,6 +1,6 @@
 import express, { Express, NextFunction } from 'express';
 import { traceMiddleware } from './tracing';
-import { countAllRequests, countAllErrors, measureLatency } from './metrics';
+import { countAllRequests, countAllErrors, measureLatency, measureMemoryUsage } from './metrics';
 const test = require('../../testProjects/dice/dist/index.js');
 
 const app: Express = express();
@@ -10,6 +10,7 @@ app.use(countAllRequests());
 app.use(countAllErrors);
 app.use(measureLatency());
 app.use(traceMiddleware());
+app.use(measureMemoryUsage());
 
 let count: number = 0;
 

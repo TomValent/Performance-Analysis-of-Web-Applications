@@ -1,6 +1,6 @@
-import express, {NextFunction, response} from 'express';
-import { MeterProvider, Meter } from '@opentelemetry/metrics';
-import { Counter } from '@opentelemetry/api-metrics';
+import express, { NextFunction } from 'express';
+import { Meter, MeterProvider } from '@opentelemetry/metrics';
+import { Counter, ValueType } from '@opentelemetry/api-metrics';
 import { FileMetricsExporter } from './exporters/FileMetricsExporter';
 
 // // constants
@@ -19,7 +19,7 @@ const meterProvider: MeterProvider = new MeterProvider({
 const requestMeter: Meter = meterProvider.getMeter(METER_NAME);
 const errorMeter: Meter = meterProvider.getMeter(METER_NAME);
 const latencyMeter: Meter = meterProvider.getMeter(METER_NAME);
-const buttonLatencyMeter: Meter = meterProvider.getMeter(METER_NAME);
+const memoryMeter = meterProvider.getMeter(METER_NAME);
 
 // create counters
 const requestCount = requestMeter.createCounter('page_requests', {
@@ -42,6 +42,12 @@ const errorMessageMetric = errorMeter.createCounter('error_message_count', {
     unit: 'times',
 });
 
+const memoryUsageCounter = memoryMeter.createUpDownCounter('memory_usage_counter', {
+    description: 'Total memory usage in bits',
+    unit: 'bits',
+    valueType: ValueType.INT,
+});
+
 const boundInstruments = new Map();
 
 // middleware implementations
@@ -60,7 +66,7 @@ export const countAllRequests = () => {
 
 export const countAllErrors = (req: express.Request, res: express.Response, next: NextFunction) : void => {
     res.once('finish', () => {
-        const isError = res.statusCode >= 400;
+        const isError = res.statusCode >= 400 && req.path !== "/favicon.ico";
 
         if (isError) {
             errorCountMetric.add(1);
@@ -101,6 +107,17 @@ export const measureLatency = () => {
 
             latencySummary.record(latencyMs, labels);
         });
+
+        next();
+    };
+};
+
+export const measureMemoryUsage = () => {
+    return (req: express.Request, res: express.Response, next: NextFunction) => {
+        const labels = { route: req.path };
+        const memoryUsageInBytes = process.memoryUsage().heapUsed;
+
+        memoryUsageCounter.add(memoryUsageInBytes, labels);
 
         next();
     };

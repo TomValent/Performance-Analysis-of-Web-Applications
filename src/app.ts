@@ -1,6 +1,7 @@
 import express, { Express, NextFunction } from 'express';
 import { traceMiddleware } from './tracing';
 import { countAllRequests, countAllErrors, measureLatency, measureMemoryUsage } from './metrics';
+import { config } from '../config/config.project';
 const test = require('../../testProjects/dice/dist/index.js');
 
 const app: Express = express();
@@ -18,42 +19,64 @@ setInterval((): void => {
     count++;
 }, 1000);
 
+type Endpoint = {
+  path: string;
+  method: string;
+};
+
+// bind routes with methods
+const methodMap: { [key: string]: Function } = {
+  'get': app.get.bind(app),
+  'post': app.post.bind(app),
+};
+
 // routes
-app.get('/', (req: express.Request, res: express.Response) => {
-  res.send(`
-    <h2>Welcome to the homepage!</h2>
-    <button onclick="window.location.href='/about'">About</button>
-    <button onclick="window.location.href='/roll'">Roll</button>
-    <button onclick="window.location.href='/uptime'">Count</button>
-  `);
-});
+config.endpoints.forEach((endpoint: Endpoint) => {
+  const { path, method } = endpoint;
 
-app.get('/about', (req: express.Request, res: express.Response) => {
-  res.send('This is the just testing page for thesis.');
-});
+  if (methodMap[method]) {
+    methodMap[method](path, (req: express.Request, res: express.Response) => {
+      switch (path) {
+        case '/':
+          res.send(`
+            <h2>Welcome to the homepage!</h2>
+            <button onclick="window.location.href='/about'">About</button>
+            <button onclick="window.location.href='/roll'">Roll</button>
+            <button onclick="window.location.href='/uptime'">Count</button>
+          `);
+        break;
 
-app.get('/roll', (req: express.Request, res: express.Response) => {
-  const htmlContent = `
-    <p>Roll the D20:</p>
-    <button onclick="rollDice()">Roll D20</button>
-    <div id="diceResult" style="padding-top: 15px"></div>
-    
-    <script>
-      function rollDice() {
-        fetch('/roll')
-          .then(response => {
-            const randomNumber = Math.floor(Math.random() * 20) + 1;
-            document.getElementById('diceResult').textContent = randomNumber.toString();
-          });
+        case '/about':
+          res.send('This is the just testing page for thesis.');
+          break;
+
+        case '/roll':
+          res.send(`
+            <p>Roll the D20:</p>
+            <button onclick="rollDice()">Roll D20</button>
+            <div id="diceResult" style="padding-top: 15px"></div>
+
+            <script>
+                function rollDice() {
+                    fetch('/roll')
+                        .then(response => {
+                            const randomNumber = Math.floor(Math.random() * 20) + 1;
+                            document.getElementById('diceResult').textContent = randomNumber.toString();
+                        });
+                }
+            </script>
+          `);
+          break;
+
+        case '/uptime':
+          res.send(`Uptime: ${count} seconds have passed`);
+          break;
+
+        default:
+          break;
       }
-    </script>
-  `;
-
-  res.send(htmlContent);
-});
-
-app.get('/uptime', (req: express.Request, res: express.Response) => {
-  res.send(`Uptime: ${count} seconds have passed`);
+    });
+  }
 });
 
 app.use(function(req: express.Request, res: express.Response, next: NextFunction) {

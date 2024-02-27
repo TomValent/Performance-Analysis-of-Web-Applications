@@ -23,7 +23,7 @@ const memoryMeter = meterProvider.getMeter(METER_NAME);
 
 // create counters
 const requestCount = requestMeter.createCounter('page_requests', {
-    description: 'Request count:',
+    description: 'Request count',
 });
 
 const errorCountMetric: Counter = errorMeter.createCounter('error_count', {

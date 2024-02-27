@@ -24,22 +24,18 @@ const memoryMeter = meterProvider.getMeter(METER_NAME);
 // create counters
 const requestCount = requestMeter.createCounter('page_requests', {
     description: 'Request count:',
-    unit: 'times',
 });
 
 const errorCountMetric: Counter = errorMeter.createCounter('error_count', {
     description: 'Counts total occurrences of errors',
-    unit: 'times',
 });
 
 const errorCodeMetric = errorMeter.createCounter('error_code_count', {
     description: 'Counts occurrences of different error codes',
-    unit: 'times',
 });
 
 const errorMessageMetric = errorMeter.createCounter('error_message_count', {
     description: 'Counts occurrences of different error messages',
-    unit: 'times',
 });
 
 const memoryUsageCounter = memoryMeter.createUpDownCounter('memory_usage_counter', {

@@ -53,7 +53,11 @@ export class FileMetricsExporter implements MetricExporter {
                     console.error('Error writing metrics to file:', err);
                     resultCallback(new Result(ExportResultCode.FAILED, new Error('Error writing metrics to file:' + err.message)));
                 } else {
-                    console.log('Metrics written to file:', this.filename);
+                    const isSilent = process.argv.includes("--silent");
+
+                    if (!isSilent) {
+                        console.log('Metrics written to file:', this.filename);
+                    }
                     resultCallback(new Result(ExportResultCode.SUCCESS));
                 }
             });

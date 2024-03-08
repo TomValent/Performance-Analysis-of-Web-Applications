@@ -2,7 +2,6 @@ import express, { Express, NextFunction } from 'express';
 import { traceMiddleware } from './tracing';
 import { countAllRequests, countAllErrors, measureLatency, measureMemoryUsage } from './metrics';
 import { config } from '../config/config.project';
-const test = require('../../testProjects/dice/dist/index.js');
 
 const app: Express = express();
 

@@ -86,7 +86,7 @@ export const countAllErrors = (req: express.Request, res: express.Response, next
 };
 
 
-export const measureLatency = () => {
+export const measureLatency: any = () => {
     return (req: express.Request, res: express.Response, next: NextFunction): void => {
         const start = process.hrtime();
 
@@ -95,7 +95,6 @@ export const measureLatency = () => {
             const latencyMs = elapsed[0] * 1000 + elapsed[1] / 1000000;
             const labels = { route: req.path };
 
-            // create a summary value recorder
             const latencySummary = latencyMeter.createValueRecorder('request_latency_summary', {
                 description: 'Latency of requests in milliseconds',
                 unit: 'ms',

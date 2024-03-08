@@ -44,7 +44,11 @@ export class FileSpanExporter implements SpanExporter {
                 if (err) {
                     done(new Result(ExportResultCode.FAILED, new Error('Error writing spans to file:' + err.message)));
                 } else {
-                    console.log('Spans written to file:', this.filename);
+                    const isSilent = process.argv.includes("--silent");
+
+                    if (!isSilent) {
+                        console.log('Spans written to file:', this.filename);
+                    }
                     done(new Result(ExportResultCode.SUCCESS));
                 }
             });

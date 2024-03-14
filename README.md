@@ -2,7 +2,7 @@
 Typescript profiler written with OpenTelemetry.
 
 ## Requirements
-- Node.js 18.16 >=
+- Node.js 18.13 >=
 
 ## Usage
 

@@ -1,9 +1,9 @@
 import express, { NextFunction } from 'express';
 import { Meter, MeterProvider } from '@opentelemetry/metrics';
-import { Counter, ValueType } from '@opentelemetry/api-metrics';
+import { ValueType } from '@opentelemetry/api-metrics';
 import { FileMetricsExporter } from './exporters/FileMetricsExporter';
 
-// // constants
+// constants
 const FILENAME: string   = 'data/metrics/metrics.log';
 const INTERVAL: number   = 1000;
 const METER_NAME: string = 'OpenTelemetry-metrics';
@@ -19,14 +19,15 @@ const meterProvider: MeterProvider = new MeterProvider({
 const requestMeter: Meter = meterProvider.getMeter(METER_NAME);
 const errorMeter: Meter = meterProvider.getMeter(METER_NAME);
 const latencyMeter: Meter = meterProvider.getMeter(METER_NAME);
-const memoryMeter = meterProvider.getMeter(METER_NAME);
+const memoryMeter: Meter = meterProvider.getMeter(METER_NAME);
+const throughputMeter: Meter = meterProvider.getMeter(METER_NAME);
 
 // create counters
 const requestCount = requestMeter.createCounter('page_requests', {
     description: 'Request count',
 });
 
-const errorCountMetric: Counter = errorMeter.createCounter('error_count', {
+const errorCountMetric = errorMeter.createCounter('error_count', {
     description: 'Counts total occurrences of errors',
 });
 
@@ -44,13 +45,13 @@ const memoryUsageCounter = memoryMeter.createUpDownCounter('memory_usage_counter
     valueType: ValueType.INT,
 });
 
-const boundInstruments = new Map();
-
 // middleware implementations
 export const countAllRequests = () => {
+    const boundInstruments: Map<string, any> = new Map();
+
     return (req: express.Request, res: express.Response, next: NextFunction): void => {
         if (!boundInstruments.has(req.path)) {
-            const labels = { route: req.path };
+            const labels: { route: string } = { route: req.path };
             const boundCounter = requestCount.bind(labels);
             boundInstruments.set(req.path, boundCounter);
         }
@@ -62,18 +63,23 @@ export const countAllRequests = () => {
 
 export const countAllErrors = (req: express.Request, res: express.Response, next: NextFunction) : void => {
     res.once('finish', () => {
-        const isError = res.statusCode >= 400 && req.path !== "/favicon.ico";
+        const isError: boolean = res.statusCode >= 400 && req.path !== "/favicon.ico";
 
         if (isError) {
-            errorCountMetric.add(1);
+            errorCountMetric.bind({route: req.path}).add(1);
 
-            const errorCode = res.statusCode.toString();
-            errorCodeMetric.bind({ error_code: errorCode }).add(1);
+            const errorCode: string = res.statusCode.toString();
+            const labelCode: {route: string, error_code: string} = {
+                route: req.path,
+                error_code: errorCode,
+            };
+
+            errorCodeMetric.bind(labelCode).add(1);
 
             let errorMessage: string = 'Route: ' + req.path + ' - ';
             errorMessage += res.statusMessage ?? 'Unknown error';
 
-            const labels = {
+            const labels: {route: string, errorMessage: string} = {
                 route: req.path,
                 errorMessage: errorMessage,
             };
@@ -88,12 +94,12 @@ export const countAllErrors = (req: express.Request, res: express.Response, next
 
 export const measureLatency: any = () => {
     return (req: express.Request, res: express.Response, next: NextFunction): void => {
-        const start = process.hrtime();
+        const start: [number, number] = process.hrtime();
 
-        res.on('finish', () => {
-            const elapsed = process.hrtime(start);
-            const latencyMs = elapsed[0] * 1000 + elapsed[1] / 1000000;
-            const labels = { route: req.path };
+        res.on('finish', (): void => {
+            const elapsed: [number, number] = process.hrtime(start);
+            const latencyMs: number = elapsed[0] * 1000 + elapsed[1] / 1000000;
+            const labels: {route: string} = { route: req.path };
 
             const latencySummary = latencyMeter.createValueRecorder('request_latency_summary', {
                 description: 'Latency of requests in milliseconds',
@@ -109,10 +115,32 @@ export const measureLatency: any = () => {
 
 export const measureMemoryUsage = () => {
     return (req: express.Request, res: express.Response, next: NextFunction) => {
-        const labels = { route: req.path };
-        const memoryUsageInBytes = process.memoryUsage().heapUsed;
+        const labels: {route: string} = { route: req.path };
+        const memoryUsageInBytes: number = process.memoryUsage().heapUsed;
 
         memoryUsageCounter.add(memoryUsageInBytes, labels);
+
+        next();
+    };
+};
+
+export const recordThroughput = () => {
+    return (req: express.Request, res: express.Response, next: NextFunction): void => {
+        const startTime: [number, number] = process.hrtime();
+
+        res.on('finish', () => {
+            const endTime: [number, number] = process.hrtime(startTime);
+            const latencySeconds: number = (endTime[0] + endTime[1] / 1e9);
+
+            const throughput: number = 1 / (latencySeconds);
+
+            const throughputSummary = throughputMeter.createValueRecorder('throughput', {
+                description: 'Throughput of requests',
+                unit: 'requests per second',
+            });
+
+            throughputSummary.record(throughput);
+        });
 
         next();
     };

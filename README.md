@@ -9,5 +9,8 @@ Typescript profiler written with OpenTelemetry.
 ```bash
 yarn install
 yarn build
-yarn start
+yarn start --silent --path '../../testProjects/dice/src/index'
 ```
+
+- silent: flag to disable console logs (optional)
+- path: path to the project to profile, index file (required)

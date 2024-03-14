@@ -12,5 +12,5 @@ yarn build
 yarn start --silent --path '../../testProjects/dice/src/index'
 ```
 
-- silent: flag to disable console logs (optional)
 - path: path to the project to profile, index file (required)
+- silent: flag to disable console logs (optional)

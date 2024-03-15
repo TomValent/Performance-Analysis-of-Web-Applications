@@ -17,6 +17,7 @@ const argv:string[] = process.argv.slice(2);
 
 if (!argv.includes('--path')) {
   console.log('Path to test project directory not provided.');
+  process.exit(1);
 }
 
 const pathIndex: number = argv.indexOf('--path');
@@ -24,14 +25,20 @@ let testProjectDir:string = '';
 
 testProjectDir = argv[pathIndex + 1];
 
+if (!testProjectDir) {
+    console.log('Path to test project directory not provided.');
+    process.exit(1);
+}
+
 import(testProjectDir).then((module): void => {
     const otherApp = module.app;
     app.use(otherApp);
 }).catch((error): void => {
     console.error('Error importing module:', error);
+    process.exit(1);
 });
 
-// server
+// start the server
 const PORT: string|9000 = process.env.PORT || 9000;
 
 app.listen(PORT, (): void => {

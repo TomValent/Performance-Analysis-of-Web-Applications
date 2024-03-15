@@ -36,7 +36,7 @@ export const traceMiddleware = () => {
         const childSpan: Span = tracer.startSpan('processing', { parent: span } as any);
 
         if (req.method === 'GET') {
-            const buttonClickHandler = () => {
+            const buttonClickHandler = (): void => {
                 const buttonClickSpan: Span = tracer.startSpan('button_click', { parent: span } as any);
                 buttonClickSpan.end();
             };

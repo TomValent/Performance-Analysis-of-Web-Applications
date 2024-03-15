@@ -16,7 +16,7 @@ app.use(recordThroughput());
 const argv:string[] = process.argv.slice(2);
 
 if (!argv.includes('--path')) {
-  console.log('Path to test project directory not provided.');
+  console.error('Path to test project directory not provided.');
   process.exit(1);
 }
 
@@ -26,7 +26,7 @@ let testProjectDir:string = '';
 testProjectDir = argv[pathIndex + 1];
 
 if (!testProjectDir) {
-    console.log('Path to test project directory not provided.');
+    console.error('Path to test project directory not provided.');
     process.exit(1);
 }
 

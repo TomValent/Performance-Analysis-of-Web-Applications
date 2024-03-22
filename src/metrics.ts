@@ -40,8 +40,8 @@ const errorMessageMetric = errorMeter.createCounter('error_message_count', {
 });
 
 const memoryUsageCounter = memoryMeter.createUpDownCounter('memory_usage_counter', {
-    description: 'Total memory usage in bits',
-    unit: 'bits',
+    description: 'Total memory usage',
+    unit: 'bytes',
     valueType: ValueType.INT,
 });
 

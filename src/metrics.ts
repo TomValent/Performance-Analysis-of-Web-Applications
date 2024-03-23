@@ -127,6 +127,7 @@ export const measureMemoryUsage = () => {
 export const recordThroughput = () => {
     return (req: express.Request, res: express.Response, next: NextFunction): void => {
         const startTime: [number, number] = process.hrtime();
+        const labels: {route: string} = { route: req.path };
 
         res.on('finish', () => {
             const endTime: [number, number] = process.hrtime(startTime);
@@ -139,7 +140,7 @@ export const recordThroughput = () => {
                 unit: 'requests per second',
             });
 
-            throughputSummary.record(throughput);
+            throughputSummary.record(throughput, labels);
         });
 
         next();

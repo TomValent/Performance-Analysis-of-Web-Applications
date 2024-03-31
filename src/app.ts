@@ -31,7 +31,7 @@ if (!testProjectDir) {
 }
 
 import(testProjectDir).then((module): void => {
-    const otherApp = module.app;
+    const otherApp = module.default || module.app;
     app.use(otherApp);
 }).catch((error): void => {
     console.error('Error importing module:', error);

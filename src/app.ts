@@ -6,7 +6,10 @@ import {
     measureLatency,
     measureMemoryUsage,
     recordThroughput,
-    measureCPUUsage, measureCPUTime
+    measureCPUUsage,
+    measureCPUTime,
+    measureFSOperations,
+    measureVoluntaryContextSwitches
 } from './metrics';
 
 const app: Express = express();
@@ -15,11 +18,13 @@ const app: Express = express();
 app.use(countAllRequests());
 app.use(countAllErrors);
 app.use(measureLatency());
-// app.use(traceMiddleware());
+ app.use(traceMiddleware());
 app.use(measureMemoryUsage());
 app.use(recordThroughput());
 app.use(measureCPUUsage());
 app.use(measureCPUTime());
+app.use(measureFSOperations());
+app.use(measureVoluntaryContextSwitches());
 
 // get project routes (dynamic import)
 const argv:string[] = process.argv.slice(2);

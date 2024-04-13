@@ -21,6 +21,9 @@ const latencyMeter: Meter = meterProvider.getMeter(METER_NAME);
 const memoryMeter: Meter = meterProvider.getMeter(METER_NAME);
 const throughputMeter: Meter = meterProvider.getMeter(METER_NAME);
 const cpuUsageMeter: Meter = meterProvider.getMeter(METER_NAME);
+const cpuTimeMeter: Meter = meterProvider.getMeter(METER_NAME);
+const fsMeter: Meter = meterProvider.getMeter(METER_NAME);
+const vcsMeter: Meter = meterProvider.getMeter(METER_NAME);
 
 // create counters
 const requestCount = requestMeter.createCounter('page_requests', {
@@ -54,14 +57,26 @@ const systemCpuUsageCounter = cpuUsageMeter.createUpDownCounter('system_cpu_usag
     unit: 'seconds',
 });
 
-const userCpuTimeCounter = cpuUsageMeter.createUpDownCounter('user_cpu_time', {
+const userCpuTimeCounter = cpuTimeMeter.createUpDownCounter('user_cpu_time', {
     description: 'User CPU time',
     unit: 'seconds',
 });
 
-const systemCpuTimeCounter = cpuUsageMeter.createUpDownCounter('system_cpu_time', {
+const systemCpuTimeCounter = cpuTimeMeter.createUpDownCounter('system_cpu_time', {
     description: 'System CPU time',
     unit: 'seconds',
+});
+
+const fsReadCounter = fsMeter.createCounter('fs_read', {
+    description: 'File system reads',
+});
+
+const fsWriteCounter = fsMeter.createCounter('fs_write', {
+    description: 'File system writes',
+});
+
+const voluntaryContextSwitchesCounter = vcsMeter.createCounter('voluntary_context_switches', {
+    description: 'Voluntary context switches',
 });
 
 // middleware implementations
@@ -192,6 +207,23 @@ export const measureCPUTime = () => {
         userCpuTimeCounter.add(userCPUTimeSeconds, labels);
         systemCpuTimeCounter.add(systemCPUTimeSeconds, labels);
 
+        next();
+    };
+};
+
+export const measureFSOperations = () => {
+    return (req: express.Request, res: express.Response, next: NextFunction): void => {
+        const labels: {route: string} = { route: req.path };
+        fsReadCounter.add(process.resourceUsage().fsRead, labels);
+        fsWriteCounter.add(process.resourceUsage().fsWrite, labels);
+        next();
+    };
+};
+
+export const measureVoluntaryContextSwitches = () => {
+    return (req: express.Request, res: express.Response, next: NextFunction): void => {
+        const labels: {route: string} = { route: req.path };
+        voluntaryContextSwitchesCounter.add(process.resourceUsage().voluntaryContextSwitches, labels);
         next();
     };
 };

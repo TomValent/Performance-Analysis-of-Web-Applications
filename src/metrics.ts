@@ -41,7 +41,7 @@ const errorMessageMetric = errorMeter.createCounter('error_message_count', {
 
 const memoryUsageCounter = memoryMeter.createUpDownCounter('memory_usage_counter', {
     description: 'Total memory usage',
-    unit: 'bytes',
+    unit: 'MB',
     valueType: ValueType.INT,
 });
 
@@ -117,8 +117,9 @@ export const measureMemoryUsage = () => {
     return (req: express.Request, res: express.Response, next: NextFunction) => {
         const labels: {route: string} = { route: req.path };
         const memoryUsageInBytes: number = process.memoryUsage().heapUsed;
+        const memoryUsageInMB: number = memoryUsageInBytes / (1024 * 1024);
 
-        memoryUsageCounter.add(memoryUsageInBytes, labels);
+        memoryUsageCounter.add(memoryUsageInMB, labels);
 
         next();
     };

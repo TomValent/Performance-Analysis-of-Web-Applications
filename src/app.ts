@@ -1,6 +1,13 @@
 import express, { Express } from 'express';
 import { traceMiddleware } from './tracing';
-import { countAllRequests, countAllErrors, measureLatency, measureMemoryUsage, recordThroughput } from './metrics';
+import {
+    countAllRequests,
+    countAllErrors,
+    measureLatency,
+    measureMemoryUsage,
+    recordThroughput,
+    measureCPUUsage, measureCPUTime
+} from './metrics';
 
 const app: Express = express();
 
@@ -8,9 +15,11 @@ const app: Express = express();
 app.use(countAllRequests());
 app.use(countAllErrors);
 app.use(measureLatency());
-app.use(traceMiddleware());
+// app.use(traceMiddleware());
 app.use(measureMemoryUsage());
 app.use(recordThroughput());
+app.use(measureCPUUsage());
+app.use(measureCPUTime());
 
 // get project routes (dynamic import)
 const argv:string[] = process.argv.slice(2);

@@ -42,9 +42,19 @@ const errorMessageMetric = errorMeter.createCounter('error_message_count', {
     description: 'Counts occurrences of different error messages',
 });
 
+const latencySummary = latencyMeter.createUpDownCounter('request_latency_summary', {
+    description: 'Latency of requests in milliseconds',
+    unit: 'ms',
+});
+
 const memoryUsageCounter = memoryMeter.createUpDownCounter('memory_usage_counter', {
     description: 'Total memory usage',
     unit: 'MB',
+});
+
+const throughputSummary = throughputMeter.createUpDownCounter('throughput', {
+    description: 'Throughput of requests',
+    unit: 'requests per second',
 });
 
 const userCpuUsageCounter = cpuUsageMeter.createUpDownCounter('user_cpu_usage', {
@@ -95,8 +105,8 @@ export const countAllRequests = () => {
     };
 };
 
-export const countAllErrors = (req: express.Request, res: express.Response, next: NextFunction) : void => {
-    res.once('finish', () => {
+export const countAllErrors = (req: express.Request, res: express.Response, next: NextFunction): void => {
+    res.once('finish', (): void => {
         const isError: boolean = res.statusCode >= 400 && req.path !== "/favicon.ico";
 
         if (isError) {
@@ -126,21 +136,17 @@ export const countAllErrors = (req: express.Request, res: express.Response, next
 };
 
 
-export const measureLatency: any = () => {
+export const measureLatency = () => {
     return (req: express.Request, res: express.Response, next: NextFunction): void => {
-        const start: [number, number] = process.hrtime();
+        const start: bigint = process.hrtime.bigint();
 
         res.on('finish', (): void => {
-            const elapsed: [number, number] = process.hrtime(start);
-            const latencyMs: number = elapsed[0] * 1000 + elapsed[1] / 1000000;
+            const end: bigint = process.hrtime.bigint();
+            const elapsed: bigint = end - start;
+            const latencyMs: number = Number(elapsed) / 1e6;
             const labels: {route: string} = { route: req.path };
 
-            const latencySummary = latencyMeter.createValueRecorder('request_latency_summary', {
-                description: 'Latency of requests in milliseconds',
-                unit: 'ms',
-            });
-
-            latencySummary.record(latencyMs, labels);
+            latencySummary.add(latencyMs, labels);
         });
 
         next();
@@ -148,7 +154,7 @@ export const measureLatency: any = () => {
 };
 
 export const measureMemoryUsage = () => {
-    return (req: express.Request, res: express.Response, next: NextFunction) => {
+    return (req: express.Request, res: express.Response, next: NextFunction): void => {
         const labels: {route: string} = { route: req.path };
         const memoryUsageInBytes: number = process.memoryUsage().heapUsed;
         const memoryUsageInMB: number = memoryUsageInBytes / (1024 * 1024);
@@ -161,21 +167,16 @@ export const measureMemoryUsage = () => {
 
 export const recordThroughput = () => {
     return (req: express.Request, res: express.Response, next: NextFunction): void => {
-        const startTime: [number, number] = process.hrtime();
         const labels: {route: string} = { route: req.path };
+        const start: bigint = process.hrtime.bigint();
 
-        res.on('finish', () => {
-            const endTime: [number, number] = process.hrtime(startTime);
-            const latencySeconds: number = (endTime[0] + endTime[1] / 1e9);
-
+        res.on('finish', (): void => {
+            const end: bigint = process.hrtime.bigint();
+            const elapsed: bigint = end - start;
+            const latencySeconds: number = Number(elapsed) / 1e9;
             const throughput: number = 1 / (latencySeconds);
 
-            const throughputSummary = throughputMeter.createValueRecorder('throughput', {
-                description: 'Throughput of requests',
-                unit: 'requests per second',
-            });
-
-            throughputSummary.record(throughput, labels);
+            throughputSummary.add(throughput, labels);
         });
 
         next();
@@ -214,6 +215,7 @@ export const measureCPUTime = () => {
 export const measureFSOperations = () => {
     return (req: express.Request, res: express.Response, next: NextFunction): void => {
         const labels: {route: string} = { route: req.path };
+
         fsReadCounter.add(process.resourceUsage().fsRead, labels);
         fsWriteCounter.add(process.resourceUsage().fsWrite, labels);
         next();
@@ -223,6 +225,7 @@ export const measureFSOperations = () => {
 export const measureVoluntaryContextSwitches = () => {
     return (req: express.Request, res: express.Response, next: NextFunction): void => {
         const labels: {route: string} = { route: req.path };
+
         voluntaryContextSwitchesCounter.add(process.resourceUsage().voluntaryContextSwitches, labels);
         next();
     };

@@ -4,7 +4,6 @@ Typescript profiler written with OpenTelemetry.
 ## Requirements
 - Node.js 18.13 >=
 - export express app containing routes their implementation
-- npm -g install typescript-call-graph
 
 ```ts
 import express from "express";

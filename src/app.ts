@@ -18,7 +18,7 @@ const app: Express = express();
 app.use(countAllRequests());
 app.use(countAllErrors);
 app.use(measureLatency());
- app.use(traceMiddleware());
+app.use(traceMiddleware());
 app.use(measureMemoryUsage());
 app.use(recordThroughput());
 app.use(measureCPUUsage());

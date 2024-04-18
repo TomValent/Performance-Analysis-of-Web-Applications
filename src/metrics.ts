@@ -146,7 +146,6 @@ export const measureLatency = () => {
             const latencyMs: number = Number(elapsed) / 1e6;
             const labels: {route: string} = { route: req.path };
 
-            console.log("latency: " + lastLatencyValue + " measured: " + latencyMs)
             latencySummary.add(latencyMs - lastLatencyValue, labels);
             lastLatencyValue = latencyMs;
         });
@@ -162,7 +161,6 @@ export const measureMemoryUsage = () => {
         const memoryUsageInBytes: number = process.memoryUsage().heapUsed;
         const memoryUsageInMB: number = memoryUsageInBytes / (1024 * 1024);
 
-        console.log("memory: " + lastMemoryValue + " measured: " + memoryUsageInMB)
         memoryUsageCounter.add(memoryUsageInMB - lastMemoryValue, labels);
         lastMemoryValue = memoryUsageInMB;
 

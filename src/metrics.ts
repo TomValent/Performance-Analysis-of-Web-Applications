@@ -135,34 +135,32 @@ export const countAllErrors = (req: express.Request, res: express.Response, next
     next();
 };
 
-let lastLatencyValue = 0;
 export const measureLatency = () => {
-    return (req: express.Request, res: express.Response, next: NextFunction): void => {
+    return async (req: express.Request, res: express.Response, next: NextFunction): Promise<void> => {
         const start: bigint = process.hrtime.bigint();
 
-        res.on('finish', (): void => {
+        res.on('finish', async (): Promise<void> => {
             const end: bigint = process.hrtime.bigint();
             const elapsed: bigint = end - start;
             const latencyMs: number = Number(elapsed) / 1e6;
             const labels: {route: string} = { route: req.path };
 
-            latencySummary.add(latencyMs - lastLatencyValue, labels);
-            lastLatencyValue = latencyMs;
+            await latencySummary.clear();
+            await latencySummary.add(latencyMs > 0 ? latencyMs : 0, labels);
         });
 
         next();
     };
 };
 
-let lastMemoryValue = 0;
 export const measureMemoryUsage = () => {
-    return (req: express.Request, res: express.Response, next: NextFunction): void => {
+    return async (req: express.Request, res: express.Response, next: NextFunction): Promise<void> => {
         const labels: {route: string} = { route: req.path };
         const memoryUsageInBytes: number = process.memoryUsage().heapUsed;
         const memoryUsageInMB: number = memoryUsageInBytes / (1024 * 1024);
 
-        memoryUsageCounter.add(memoryUsageInMB - lastMemoryValue, labels);
-        lastMemoryValue = memoryUsageInMB;
+        await memoryUsageCounter.clear();
+        await memoryUsageCounter.add(memoryUsageInMB > 0 ? memoryUsageInMB : 0, labels);
 
         next();
     };

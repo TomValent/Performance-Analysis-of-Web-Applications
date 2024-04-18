@@ -135,7 +135,7 @@ export const countAllErrors = (req: express.Request, res: express.Response, next
     next();
 };
 
-
+let lastLatencyValue = 0;
 export const measureLatency = () => {
     return (req: express.Request, res: express.Response, next: NextFunction): void => {
         const start: bigint = process.hrtime.bigint();
@@ -146,20 +146,25 @@ export const measureLatency = () => {
             const latencyMs: number = Number(elapsed) / 1e6;
             const labels: {route: string} = { route: req.path };
 
-            latencySummary.add(latencyMs, labels);
+            console.log("latency: " + lastLatencyValue + " measured: " + latencyMs)
+            latencySummary.add(latencyMs - lastLatencyValue, labels);
+            lastLatencyValue = latencyMs;
         });
 
         next();
     };
 };
 
+let lastMemoryValue = 0;
 export const measureMemoryUsage = () => {
     return (req: express.Request, res: express.Response, next: NextFunction): void => {
         const labels: {route: string} = { route: req.path };
         const memoryUsageInBytes: number = process.memoryUsage().heapUsed;
         const memoryUsageInMB: number = memoryUsageInBytes / (1024 * 1024);
 
-        memoryUsageCounter.add(memoryUsageInMB, labels);
+        console.log("memory: " + lastMemoryValue + " measured: " + memoryUsageInMB)
+        memoryUsageCounter.add(memoryUsageInMB - lastMemoryValue, labels);
+        lastMemoryValue = memoryUsageInMB;
 
         next();
     };

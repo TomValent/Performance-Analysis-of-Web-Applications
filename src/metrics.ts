@@ -42,7 +42,7 @@ const errorMessageMetric = errorMeter.createCounter('error_message_count', {
     description: 'Counts occurrences of different error messages',
 });
 
-const latencySummary = latencyMeter.createUpDownCounter('request_latency_summary', {
+const latencyCounter = latencyMeter.createUpDownCounter('request_latency_summary', {
     description: 'Latency of requests in milliseconds',
     unit: 'ms',
 });
@@ -52,7 +52,7 @@ const memoryUsageCounter = memoryMeter.createUpDownCounter('memory_usage_counter
     unit: 'MB',
 });
 
-const throughputSummary = throughputMeter.createUpDownCounter('throughput', {
+const throughputCounter = throughputMeter.createUpDownCounter('throughput', {
     description: 'Throughput of requests',
     unit: 'requests per second',
 });
@@ -145,8 +145,8 @@ export const measureLatency = () => {
             const latencyMs: number = Number(elapsed) / 1e6;
             const labels: {route: string} = { route: req.path };
 
-            await latencySummary.clear();
-            await latencySummary.add(latencyMs > 0 ? latencyMs : 0, labels);
+            await latencyCounter.clear();
+            await latencyCounter.add(latencyMs > 0 ? latencyMs : 0, labels);
         });
 
         next();
@@ -177,7 +177,7 @@ export const recordThroughput = () => {
             const latencySeconds: number = Number(elapsed) / 1e9;
             const throughput: number = 1 / (latencySeconds);
 
-            throughputSummary.add(throughput, labels);
+            throughputCounter.add(throughput, labels);
         });
 
         next();

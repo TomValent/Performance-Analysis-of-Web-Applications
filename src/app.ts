@@ -35,16 +35,16 @@ if (!argv.includes('--path')) {
 }
 
 const pathIndex: number = argv.indexOf('--path');
-let testProjectDir:string = '';
+let targetProjectDir:string = '';
 
-testProjectDir = argv[pathIndex + 1];
+targetProjectDir = argv[pathIndex + 1];
 
-if (!testProjectDir) {
+if (!targetProjectDir) {
     console.error('Path to test project directory not provided.');
     process.exit(1);
 }
 
-import(testProjectDir).then((module): void => {
+import(targetProjectDir).then((module): void => {
     const otherApp = module.default || module.app;
     app.use(otherApp);
 }).catch((error): void => {
